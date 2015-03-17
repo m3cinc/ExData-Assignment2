@@ -1,7 +1,6 @@
 ## Assignment2 - Plot2.R
 ## This first line will likely take a few seconds. Be patient!
 NEI <- readRDS("summarySCC_PM25.rds")
-library(lubridate)
 library(plyr)
 library(dplyr)
 library(tidyr)
@@ -21,13 +20,9 @@ head(NEI)
 #> 16 09001 10200401  PM25-PRI     2.036 POINT 1999
 #> 20 09001 10200504  PM25-PRI     0.388 POINT 1999
 #> 24 09001 10200602  PM25-PRI     1.490 POINT 1999
-## Recast NEI$year as.Date
-NEI$year<-as.character(NEI$year)
-NEI$year<-year(as.Date(NEI$year,"%Y"))
 NEI$type<-as.factor(NEI$type)
-NEI$Pollutant<-as.factor(NEI$Pollutant)
 NEI$SCC<-as.factor(NEI$SCC)
-NEI<-as.data.frame(NEI)
+NEI$Pollutant<-as.factor(NEI$Pollutant)
 str(NEI)
 #> 'data.frame':        6497651 obs. of  6 variables:
 #> $ fips     : chr  "09001" "09001" "09001" "09001" ...
@@ -36,10 +31,12 @@ str(NEI)
 #> $ Emissions: num  15.714 234.178 0.128 2.036 0.388 ...
 #> $ type     : Factor w/ 4 levels "NON-ROAD","NONPOINT",..: 4 4 4 4 4 4 4 4 4 4 ...
 #> $ year     : num  1999 1999 1999 1999 1999 ...
+## This confirms there's only one level of Pollutant: PM25-PRI" in NEI data frame
+## Building the query
 dfsel<-data.frame()
-dfsel<-select(NEI,-Pollutant)
-dfsel<-NEI[which(NEI$year %in% c(1999,2002,2005,2008)),]
-dfsel<-NEI[which(NEI$fips=="24510"),]
+dfsel<-select(NEI,-Pollutant)                       # exclude this single factor
+dfsel<-dfsel[which(NEI$year %in% c(1999:2008)),]    # using Which avoids dealing with NA if present
+dfsel<-dfsel[which(dfsel$fips=="24510"),]           # only for Baltimore City, Maryland fips==24510
 by_year<-group_by(dfsel,year)
 data2<-summarize(by_year,Total_PM25=sum(Emissions)/1e3)
 ##
@@ -49,7 +46,7 @@ myPNGfile<-"plot2.png"
 png(filename=myPNGfile,width=480,height=480) ## open png device for plot1.png 480x480 pix
 
 with(data2, plot(year,Total_PM25,
-                 main="Total PM2.5 Emissions Released",
+                 main="Total PM2.5 Emissions Released in Baltimore City, Maryland",
                  type="b",
                  xlab="Year",
                  ylab="Total Annual PM2.5 Emissions (in kt)")
@@ -61,3 +58,5 @@ dev.off() # close png device
 print(file.exists(myPNGfile))
 #> [1] TRUE
 print(file.info(myPNGfile))
+#> size isdir mode               mtime               ctime               atime exe
+#> plot2.png 5275 FALSE  666 2015-03-17 16:40:21 2015-03-16 20:00:34 2015-03-16 20:00:34  no

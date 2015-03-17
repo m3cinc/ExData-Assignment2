@@ -1,4 +1,4 @@
-## Assignment2 - Plot3.R
+## Assignment2 - Plot5.R
 ## This first line will likely take a few seconds. Be patient!
 NEI <- readRDS("summarySCC_PM25.rds")
 library(plyr)
@@ -33,26 +33,48 @@ str(NEI)
 #> $ Emissions: num  15.714 234.178 0.128 2.036 0.388 ...
 #> $ type     : Factor w/ 4 levels "NON-ROAD","NONPOINT",..: 4 4 4 4 4 4 4 4 4 4 ...
 #> $ year     : num  1999 1999 1999 1999 1999 ...
-## This confirms there's only one level of Pollutant: PM25-PRI" in NEI data frame
-## Building the query
+##
+SCC <- readRDS("Source_Classification_Code.rds")
+SCC<-as.data.frame(SCC)
+## search strategy: select "[Vv]eh" RegEx to subset the query match
 dfsel<-data.frame()
+dfsel<-SCC[which(SCC$Short.Name %in% SCC$Short.Name[grep("[Vv]eh",SCC$Short.Name)]),]
+nrow(dfsel);head(dfsel$Short.Name,5);tail(dfsel$Short.Name,5)
+#> [1] 1185
+#> [1] Highway Veh - Gasoline - Light Duty Vehicles (LDGV) - Total: All Road Types   
+#> [2] Highway Veh - Gasoline - Light Duty Vehicles (LDGV) - Rural Interstate: Total 
+#> [3] Highway Veh - Gasoline - Light Duty Vehicles (LDGV) - Interstate: Rural Time 1
+#> [4] Highway Veh - Gasoline - Light Duty Vehicles (LDGV) - Interstate: Rural Time 2
+#> [5] Highway Veh - Gasoline - Light Duty Vehicles (LDGV) - Interstate: Rural Time 3
+#> 11238 Levels:  ... Zinc Production /Zinc Melting
+#> [1] Lime Manuf /Vehicle Traffic                                                                 
+#> [2] Petrol Trans & Marketg /Filling Vehicle Gas Tanks - Stage II /Vapor Loss w/o Controls       
+#> [3] Petrol Trans & Marketg /Filling Vehicle Gas Tanks - Stage II /Liquid Spill Loss w/o Controls
+#> [4] Petrol Trans & Marketg /Filling Vehicle Gas Tanks - Stage II /Vapor Loss w/o Controls       
+#> [5] Petrol Trans & Marketg /Filling Vehicle Gas Tanks - Stage II /Not Classified **             
+#> 11238 Levels:  ... Zinc Production /Zinc Meltingdfsel2<-SCC[which(SCC$Short.Name %in% SCC$Short.Name[grep("[Cc]omb( .*)[Cc]oal",SCC$Short.Name)]),] 
+##
+## the query returned 1185 matches
+##
+selection<-dfsel$SCC                                # holds the matching SCC subset
 dfsel<-select(NEI,-Pollutant)                       # exclude this single factor
 dfsel<-dfsel[which(NEI$year %in% c(1999:2008)),]    # using Which avoids dealing with NA if present
-dfsel<-dfsel[which(dfsel$fips=="24510"),]           # only for Baltimore City, Maryland fips==24510
-by_year_type<-group_by(dfsel,year,type)             # summarize by year and by type
-data3<-summarize(by_year_type,Total_PM25=sum(Emissions)/1e3)
+dfsel<-dfsel[which(dfsel$SCC %in% selection),]
+dfsel<-dfsel[which(dfsel$fips=="24510"),]
+by_year<-group_by(dfsel,year)
+data5<-summarize(by_year,Total_PM25=sum(Emissions)/1e3)
 ##
 ## Begin plot
 ##
-myPNGfile<-"plot3.png"
+myPNGfile<-"plot5.png"
 png(filename=myPNGfile,width=480,height=480) ## open png device for plot1.png 480x480 pix
 
-qplot(year,Total_PM25,data=data3,facets=type~.,
-                 main="Total Annual PM2.5 Emissions Released in Baltimore City, Maryland",
+qplot(year,Total_PM25,data=data5,
+                 main="Total Annual PM2.5 Motor Vehicle Emissions - Baltimore City, Maryland",
                  xlim=c(1999,2008),
                  type="b",
                  xlab="Year",
-                 ylab="Total Annual PM2.5 Emissions (in kt)")
+                 ylab="Total Annual PM2.5 Motor Vehicle Emissions - Baltimore City, Maryland (in kt)")
 
 dev.off() # close png device
 ##
@@ -61,4 +83,4 @@ print(file.exists(myPNGfile))
 #> [1] TRUE
 print(file.info(myPNGfile))
 #> size isdir mode               mtime               ctime               atime exe
-#> plot3.png 6464 FALSE  666 2015-03-17 16:54:08 2015-03-16 20:20:57 2015-03-16 20:20:57  no
+#> plot5.png 6453 FALSE  666 2015-03-17 17:14:35 2015-03-17 15:24:56 2015-03-17 15:24:56  no
