@@ -50,7 +50,7 @@ barplot(data1[,2],
         names.arg=data1[,1],                                    # recall names from matrix 1st row
         col="blue",
         xlab="Year",
-        ylab="Total Annual PM2.5 Emissions (in Mt)",
+        ylab="Total PM2.5 Emissions (in Mt)",
         ylim=c(0,ceiling(max(data1[,2]))),                      # rescale y-axis with easy integers
         main="Total Annual PM2.5 Emissions Released - US")
 
@@ -71,5 +71,5 @@ print(file.exists(myPNGfile))
 #> [1] TRUE
 print(file.info(myPNGfile))
 #> size isdir mode               mtime               ctime               atime exe
-#> plot1.png 5238 FALSE  666 2015-03-22 08:10:03 2015-03-16 19:00:05 2015-03-16 19:00:05  no
+#> plot1.png 5095 FALSE  666 2015-03-22 11:28:37 2015-03-22 10:59:56 2015-03-22 10:59:56  no
 
