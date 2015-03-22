@@ -4,7 +4,7 @@ NEI <- readRDS("summarySCC_PM25.rds")
 library(plyr)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
+library(ggplot2) 
 str(NEI)
 #>'data.frame':        6497651 obs. of  6 variables:
 #>        $ fips     : chr  "09001" "09001" "09001" "09001" ...
@@ -58,26 +58,34 @@ nrow(dfsel);head(dfsel$Short.Name,5);tail(dfsel$Short.Name,5)
 ##
 selection<-dfsel$SCC                                # holds the matching SCC subset
 dfsel<-select(NEI,-Pollutant)                       # exclude this single factor
-dfsel<-dfsel[which(NEI$year %in% c(1999:2008)),]    # using Which avoids dealing with NA if present
+dfsel<-dfsel[which(dfsel$year %in% c(1999:2008)),]  # using Which avoids dealing with NA if present
 dfsel<-dfsel[which(dfsel$SCC %in% selection),]
 dfsel<-dfsel[which(dfsel$fips %in% c("06037","24510")),]  # select Los Angeles and Baltimore
 by_year_city<-group_by(dfsel,year,fips)
 data6<-summarize(by_year_city,Total_PM25=sum(Emissions)/1e3)
-data6$fips<-as.factor(x = data6$fips)               # need to recast fips as factor
+data6$year=factor(data6$year)
+data6$fips<-factor(data6$fips)               # need to recast fips as factor
 levels(data6$fips)<-c("Los Angeles County, CA","Baltimore City,MD")     # with levels LA and BAL
+data6A<-as.data.frame(data6)                        # second dataset for trend line
+data6A$year<-as.numeric(factor(data6A$year))
 ##
 ## Begin plot
 ##
 myPNGfile<-"plot6.png"
 png(filename=myPNGfile,width=480,height=480) ## open png device for plot1.png 480x480 pix
-
-qplot(year,Total_PM25,data=data6,facets=.~fips,binwidth=2,
-                 main="Total Annual PM2.5 Motor Vehicle Emissions Comparison",
-                 xlim=c(1999,2008),
-                 type="b",
-                 xlab="Year",
-                 ylab="Total Annual PM2.5 Motor Vehicle Emissions Comparison (in kt)")
-
+ggplot(data=data6,aes(factor(year),y=Total_PM25))+
+        geom_bar(stat="identity",color="blue",fill="blue")+
+        stat_smooth(data=data6A,
+                    aes(x=year,y=Total_PM25,group=fips),
+                    fill="blue",
+                    color="orange",
+                    size=1,
+                    method=lm,
+                    se=FALSE)+
+        facet_wrap(~fips)+
+        labs(title="Total Annual PM2.5 Motor Vehicle Emissions Comparison\nwith Linear Trendlines")+
+        xlab("Year")+
+        ylab("PM2.5 Motor Vehicle Emissions - Baltimore City, Maryland (in kt)")
 dev.off() # close png device
 ##
 ## verify PNG file exists and indicate its file.info()
@@ -85,4 +93,4 @@ print(file.exists(myPNGfile))
 #> [1] TRUE
 print(file.info(myPNGfile))
 #> size isdir mode               mtime               ctime               atime exe
-#> plot6.png 6468 FALSE  666 2015-03-17 17:21:32 2015-03-17 15:44:08 2015-03-17 15:44:08  no
+#> plot6.png 7191 FALSE  666 2015-03-22 10:37:31 2015-03-17 15:44:08 2015-03-17 15:44:08  no

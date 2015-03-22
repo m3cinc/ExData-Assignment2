@@ -6,7 +6,7 @@ library(dplyr)
 library(tidyr)
 str(NEI)
 #>'data.frame':        6497651 obs. of  6 variables:
-#>        $ fips     : chr  "09001" "09001" "09001" "09001" ...
+#>$ fips     : chr  "09001" "09001" "09001" "09001" ...
 #>$ SCC      : chr  "10100401" "10100404" "10100501" "10200401" ...
 #>$ Pollutant: chr  "PM25-PRI" "PM25-PRI" "PM25-PRI" "PM25-PRI" ...
 #>$ Emissions: num  15.714 234.178 0.128 2.036 0.388 ...
@@ -31,26 +31,38 @@ str(NEI)
 #> $ Emissions: num  15.714 234.178 0.128 2.036 0.388 ...
 #> $ type     : Factor w/ 4 levels "NON-ROAD","NONPOINT",..: 4 4 4 4 4 4 4 4 4 4 ...
 #> $ year     : num  1999 1999 1999 1999 1999 ...
-## This confirms there's only one level of Pollutant: PM25-PRI" in NEI data frame
+## This confirms there's only one level of Pollutant: "PM25-PRI" in NEI data frame
 ## Building the query
 dfsel<-data.frame()
 dfsel<-select(NEI,-Pollutant)                       # exclude this single factor
-dfsel<-dfsel[which(NEI$year %in% c(1999:2008)),]    # using Which avoids dealing with NA if present
+dfsel<-dfsel[which(dfsel$year %in% c(1999:2008)),]  # using Which avoids dealing with NA if present
 by_year<-group_by(dfsel,year)
-data1<-summarize(by_year,Total_PM25=sum(Emissions)/1e6)
+data1<-summarize(by_year,Total_PM25=sum(Emissions)/1e6) # convert sum to Mt to drop many 0s in display
+data1<-as.matrix(data1)                             # recast as matrix type needed to display barplot
 ##
 ## Begin plot
 ##
 myPNGfile<-"plot1.png"
-png(filename=myPNGfile,width=480,height=480) ## open png device for plot1.png 480x480 pix
+png(filename=myPNGfile,width=480,height=480)        # open png device for plot1.png 480x480 pix
 
-with(data1, plot(year,Total_PM25,
-                 main="Total Annual PM2.5 Emissions Released",
-                 type="b",
-                 xlim=c(1999,2008),
-                 xlab="Year",
-                 ylab="Total Annual PM2.5 Emissions (in Mt)")
-)
+barplot(data1[,2],       
+        beside=TRUE,
+        names.arg=data1[,1],                                    # recall names from matrix 1st row
+        col="blue",
+        xlab="Year",
+        ylab="Total Annual PM2.5 Emissions (in Mt)",
+        ylim=c(0,ceiling(max(data1[,2]))),                      # rescale y-axis with easy integers
+        main="Total Annual PM2.5 Emissions Released - US")
+
+data1<-as.data.frame(data1)                                     # recast for abline as data frame
+data1$year<-as.numeric(factor(data1$year))                      # needed to proper rescaling of year
+abline(lm(Total_PM25 ~ year, data = data1),                     # use linear model for trendline
+        col="orange",
+        lty = 1, 
+        lwd = 2)
+
+text(x=3,y=0.7+data1[3,2],labels="Trendline",col="orange")      # indicate the trendline
+arrows(3,0.5+data1[3,2],3,5,col='orange', length=0.1, lwd=2)    # place arrow
 
 dev.off() # close png device
 ##
@@ -59,4 +71,5 @@ print(file.exists(myPNGfile))
 #> [1] TRUE
 print(file.info(myPNGfile))
 #> size isdir mode               mtime               ctime               atime exe
-#> plot1.png 4307 FALSE  666 2015-03-17 16:21:48 2015-03-16 19:00:05 2015-03-16 19:00:05  no
+#> plot1.png 5238 FALSE  666 2015-03-22 08:10:03 2015-03-16 19:00:05 2015-03-16 19:00:05  no
+

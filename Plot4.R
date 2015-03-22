@@ -65,21 +65,36 @@ identical(dfsel,dfsel2)
 rm(dfsel2)      
 selection<-dfsel$SCC                                # holds the matching SCC subset
 dfsel<-select(NEI,-Pollutant)                       # exclude this single factor
-dfsel<-dfsel[which(NEI$year %in% c(1999:2008)),]    # using Which avoids dealing with NA if present
+dfsel<-dfsel[which(dfsel$year %in% c(1999:2008)),]  # using Which avoids dealing with NA if present
 dfsel<-dfsel[which(dfsel$SCC %in% selection),]
-by_year<-group_by(dfsel,year)                       # summarize by year
-data4<-summarize(by_year,Total_PM25=sum(Emissions)/1e3)
+dfsel<-arrange(dfsel, desc(Emissions))
+by_year_type<-group_by(dfsel,year,type)
+data4<-summarize(by_year_type,Total_PM25=sum(Emissions)/1e3)
+data4$year<-factor(data4$year)
+dfsel<-select(dfsel,-type)                      
+by_year<-group_by(dfsel,year)                          # second set for total Emissions PM_25 trendline
+data4A<-summarize(by_year,Total_PM25=sum(Emissions)/1e3)
+data4A$year<-factor(data4A$year)
+data4A<-as.data.frame(data4A)                     
+data4A$year<-as.numeric(factor(data4A$year))
 ##
 ## Begin plot
 ##
 myPNGfile<-"plot4.png"
 png(filename=myPNGfile,width=480,height=480) ## open png device for plot1.png 480x480 pix
-
-qplot(year,Total_PM25,data=data4,
-                 main="Total Annual PM2.5 Coal Combustion Related Emissions - US",
-                 xlim=c(1999,2008),
-                 xlab="Year",
-                 ylab="Total Annual PM2.5 Coal Combustion Related Emissions (in kt)")
+ggplot(data=data4,aes(factor(year),y=Total_PM25,fill=type))+
+        geom_bar(stat="identity",color="black")+
+        scale_fill_brewer()+
+        stat_smooth(data=data4A,
+                    aes(x=year,y=Total_PM25),
+                    fill="blue",
+                    color="orange",
+                    size=1,
+                    method=lm,
+                    se=FALSE)+
+        labs(title="Total Annual PM2.5 Coal Combustion Related Emissions - US\n with Linear Total Trendline")+
+        xlab("Year")+
+        ylab("PM2.5 Coal Combustion Related Emissions (in kt)")
 dev.off() # close png device
 ##
 ## verify PNG file exists and indicate its file.info()
@@ -87,4 +102,4 @@ print(file.exists(myPNGfile))
 #> [1] TRUE
 print(file.info(myPNGfile))
 #> size isdir mode               mtime               ctime               atime exe
-#> plot4.png 5356 FALSE  666 2015-03-17 17:02:39 2015-03-17 12:54:03 2015-03-17 12:54:03  no
+#> plot4.png 6504 FALSE  666 2015-03-22 10:35:52 2015-03-17 12:54:03 2015-03-17 12:54:03  no

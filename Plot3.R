@@ -37,22 +37,33 @@ str(NEI)
 ## Building the query
 dfsel<-data.frame()
 dfsel<-select(NEI,-Pollutant)                       # exclude this single factor
-dfsel<-dfsel[which(NEI$year %in% c(1999:2008)),]    # using Which avoids dealing with NA if present
+dfsel<-dfsel[which(dfsel$year %in% c(1999:2008)),]    # using Which avoids dealing with NA if present
 dfsel<-dfsel[which(dfsel$fips=="24510"),]           # only for Baltimore City, Maryland fips==24510
 by_year_type<-group_by(dfsel,year,type)             # summarize by year and by type
 data3<-summarize(by_year_type,Total_PM25=sum(Emissions)/1e3)
+data3$year<-factor(data3$year)
+data3A<-as.data.frame(data3)                        # second dataset for trend lines
+data3A$year<-as.numeric(factor(data3A$year))
 ##
 ## Begin plot
 ##
 myPNGfile<-"plot3.png"
-png(filename=myPNGfile,width=480,height=480) ## open png device for plot1.png 480x480 pix
-
-qplot(year,Total_PM25,data=data3,facets=type~.,
-                 main="Total Annual PM2.5 Emissions Released in Baltimore City, Maryland",
-                 xlim=c(1999,2008),
-                 type="b",
-                 xlab="Year",
-                 ylab="Total Annual PM2.5 Emissions (in kt)")
+png(filename=myPNGfile,width=480,height=480)        # open png device for plot1.png 480x480 pix
+ggplot (data3,
+        aes(factor(year),y=Total_PM25))+
+        geom_bar(stat="identity",
+                 color="blue",fill="blue")+
+        stat_smooth(data=data3A,
+                    aes(x=year,y=Total_PM25,group=type),
+                    fill="blue",
+                    color="orange",
+                    size=1,
+                    method=lm,
+                    se=FALSE)+
+        facet_wrap(~type)+
+        labs(title="Total Yearly PM_25 Emission and linear trendlines\nBaltimore City, MD")+
+        xlab("Year")+
+        ylab("Total Yearly PM_25 Emission (kt)")
 
 dev.off() # close png device
 ##
@@ -61,4 +72,4 @@ print(file.exists(myPNGfile))
 #> [1] TRUE
 print(file.info(myPNGfile))
 #> size isdir mode               mtime               ctime               atime exe
-#> plot3.png 6464 FALSE  666 2015-03-17 16:54:08 2015-03-16 20:20:57 2015-03-16 20:20:57  no
+#> plot3.png 7081 FALSE  666 2015-03-22 10:35:03 2015-03-16 20:20:57 2015-03-16 20:20:57  no

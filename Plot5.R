@@ -58,24 +58,31 @@ nrow(dfsel);head(dfsel$Short.Name,5);tail(dfsel$Short.Name,5)
 ##
 selection<-dfsel$SCC                                # holds the matching SCC subset
 dfsel<-select(NEI,-Pollutant)                       # exclude this single factor
-dfsel<-dfsel[which(NEI$year %in% c(1999:2008)),]    # using Which avoids dealing with NA if present
+dfsel<-dfsel[which(dfsel$year %in% c(1999:2008)),]  # using Which avoids dealing with NA if present
 dfsel<-dfsel[which(dfsel$SCC %in% selection),]
 dfsel<-dfsel[which(dfsel$fips=="24510"),]
 by_year<-group_by(dfsel,year)
 data5<-summarize(by_year,Total_PM25=sum(Emissions)/1e3)
+data5$year=factor(data5$year)
+data5A<-as.data.frame(data5)                        # second dataset for trend line
+data5A$year<-as.numeric(factor(data5A$year))
 ##
 ## Begin plot
 ##
 myPNGfile<-"plot5.png"
 png(filename=myPNGfile,width=480,height=480) ## open png device for plot1.png 480x480 pix
-
-qplot(year,Total_PM25,data=data5,
-                 main="Total Annual PM2.5 Motor Vehicle Emissions - Baltimore City, Maryland",
-                 xlim=c(1999,2008),
-                 type="b",
-                 xlab="Year",
-                 ylab="Total Annual PM2.5 Motor Vehicle Emissions - Baltimore City, Maryland (in kt)")
-
+ggplot(data=data5,aes(factor(year),y=Total_PM25))+
+        geom_bar(stat="identity",color="blue",fill="blue")+
+        stat_smooth(data=data5A,
+                    aes(x=year,y=Total_PM25),
+                    fill="blue",
+                    color="orange",
+                    size=1,
+                    method=lm,
+                    se=FALSE)+
+        labs(title="Total Annual PM2.5 Motor Vehicle Emissions - Baltimore City, Maryland\nwith Linear Trendline")+
+        xlab("Year")+
+        ylab("PM2.5 Motor Vehicle Emissions - Baltimore City, Maryland (in kt)")
 dev.off() # close png device
 ##
 ## verify PNG file exists and indicate its file.info()
@@ -83,4 +90,4 @@ print(file.exists(myPNGfile))
 #> [1] TRUE
 print(file.info(myPNGfile))
 #> size isdir mode               mtime               ctime               atime exe
-#> plot5.png 6453 FALSE  666 2015-03-17 17:14:35 2015-03-17 15:24:56 2015-03-17 15:24:56  no
+#> plot5.png 6711 FALSE  666 2015-03-22 10:36:42 2015-03-17 15:24:56 2015-03-17 15:24:56  no
